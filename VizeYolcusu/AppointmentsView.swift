@@ -28,6 +28,7 @@ struct AppointmentsView: View {
                 if let error = viewModel.networkError {
                     errorBanner(error)
                 }
+                backendStatusSection
                 trackingSection
                 testSection
             }
@@ -46,7 +47,10 @@ struct AppointmentsView: View {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
             }
             // Load on first appear
-            .onAppear { viewModel.loadAppointments() }
+            .onAppear {
+                viewModel.loadAppointments()
+                viewModel.load()
+            }
             // Auto-refresh every 60 s while view is visible
             .task {
                 while !Task.isCancelled {
@@ -67,6 +71,20 @@ struct AppointmentsView: View {
     }
 
     // MARK: Sections
+
+    private var backendStatusSection: some View {
+        Section("Güncel Randevu Durumu") {
+            if viewModel.liveAppointments.isEmpty {
+                Text("Bağlanıyor…")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(viewModel.liveAppointments, id: \.country) { dto in
+                    LiveAppointmentRow(dto: dto)
+                }
+            }
+        }
+    }
 
     private var trackingSection: some View {
         Section {
@@ -128,6 +146,33 @@ struct AppointmentsView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
             withAnimation { activeToast = nil }
         }
+    }
+}
+
+// MARK: - Live Appointment Row (DTO-backed, from /appointments)
+
+private struct LiveAppointmentRow: View {
+    let dto: AppointmentDTO
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(dto.country)
+                .font(.system(size: 15, weight: .bold))
+            Text(dto.visaType)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+            HStack {
+                Text(dto.isAvailable ? "Randevu Açıldı 🎉" : "Henüz yok")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(dto.isAvailable ? .green : .secondary)
+                Spacer()
+                Text("%\(Int(dto.confidenceScore * 100))")
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(dto.isAvailable ? .green : .orange)
+                    .monospacedDigit()
+            }
+        }
+        .padding(.vertical, 4)
     }
 }
 

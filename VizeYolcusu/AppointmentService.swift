@@ -11,12 +11,9 @@ import Foundation
 
 struct AppointmentDTO: Decodable {
     let country:         String
-    let countryKey:      String
-    let flag:            String
     let visaType:        String
     let isAvailable:     Bool
     let confidenceScore: Double
-    let reportCount:     Int
     let lastChecked:     String
 }
 
@@ -44,8 +41,7 @@ final class AppointmentService {
     static let shared = AppointmentService()
     private init() {}
 
-    // ⚠️ Replace with your deployed backend URL before shipping.
-    var baseURL = "https://YOUR_BACKEND_URL/api"
+    var baseURL = "https://vizeyolcusu-api.onrender.com"
 
     private let session: URLSession = {
         let config = URLSessionConfiguration.default

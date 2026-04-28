@@ -51,6 +51,7 @@ struct AppointmentStatus: Identifiable {
 
 final class AppointmentViewModel: ObservableObject {
     @Published var appointments: [AppointmentStatus] = []
+    @Published var liveAppointments: [AppointmentDTO] = []
     @Published var isLoading:    Bool    = false
     @Published var networkError: String? = nil
 
@@ -80,12 +81,14 @@ final class AppointmentViewModel: ObservableObject {
                 switch result {
                 case .success(let dtos):
                     self.appointments = dtos.map { dto in
-                        let prev = snapshot.first { $0.countryKey == dto.countryKey }
+                        // Derive a stable key from the country name ("Germany" → "germany")
+                        let key  = dto.country.lowercased().replacingOccurrences(of: " ", with: "_")
+                        let prev = snapshot.first { $0.countryKey == key }
                         return AppointmentStatus(
                             id:                  prev?.id ?? UUID(),
-                            countryKey:          dto.countryKey,
-                            countryName:         dto.country,
-                            flag:                dto.flag,
+                            countryKey:          key,
+                            countryName:         prev?.countryName ?? dto.country,
+                            flag:                prev?.flag ?? "",
                             visaType:            dto.visaType,
                             isAvailable:         dto.isAvailable,
                             confidenceScore:     dto.confidenceScore,
@@ -113,6 +116,18 @@ final class AppointmentViewModel: ObservableObject {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                         self?.loadAppointments()
                     }
+                }
+            }
+        }
+    }
+
+    /// Fetches structured appointment data from the deployed backend.
+    func load() {
+        AppointmentService.shared.fetchAppointments { [weak self] result in
+            DispatchQueue.main.async {
+                switch result {
+                case .success(let dtos): self?.liveAppointments = dtos
+                case .failure:           self?.liveAppointments = []
                 }
             }
         }
