@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "/Users/mevlutfurkanates/Desktop/Swift Projects/vize-yolcusu-backend/src",
+      "/Users/mevlutfurkanates/Desktop/Swift Projects/vize-yolcusu-backend"
+    ],
+    "allow": [
+      "Bash(node --check server.js)",
+      "Bash(node --check src/config/firebase.js)",
+      "Bash(node --check src/data/store.js)",
+      "Bash(node --check src/services/confidenceService.js)",
+      "Bash(node --check src/services/appointmentService.js)"
+    ]
+  }
+}
