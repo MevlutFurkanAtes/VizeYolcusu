@@ -74,8 +74,15 @@ struct AppointmentsView: View {
 
     private var backendStatusSection: some View {
         Section("Güncel Randevu Durumu") {
-            if viewModel.liveAppointments.isEmpty {
-                Text("Bağlanıyor…")
+            if viewModel.isLoading {
+                HStack(spacing: 10) {
+                    ProgressView().scaleEffect(0.8)
+                    Text("Bağlanıyor…")
+                        .font(.system(size: 14))
+                        .foregroundStyle(.secondary)
+                }
+            } else if viewModel.liveAppointments.isEmpty {
+                Text("Veri yok")
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
             } else {
@@ -93,14 +100,8 @@ struct AppointmentsView: View {
                     appointment: $appointment,
                     themeColor: themeColor,
                     onReport: {
-                        viewModel.reportAppointment(countryKey: appointment.countryKey) { result in
-                            switch result {
-                            case .success:
-                                showToast(ToastMessage(text: "Bildirimin alındı 👍", isSuccess: true))
-                            case .failure:
-                                showToast(ToastMessage(text: "Bir hata oluştu, tekrar dene", isSuccess: false))
-                            }
-                        }
+                        viewModel.reportAppointment(country: appointment.countryKey)
+                        showToast(ToastMessage(text: "Bildirimin alındı 👍", isSuccess: true))
                     }
                 )
             }
@@ -255,8 +256,8 @@ private struct AppointmentRow: View {
         Button {
             guard !onCooldown else { return }
             // Lock for 10 s; asyncAfter clears it without needing a per-row Timer.
-            cooldownUntil = Date().addingTimeInterval(10)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+            cooldownUntil = Date().addingTimeInterval(5)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
                 cooldownUntil = .distantPast
             }
             onReport()

@@ -104,18 +104,12 @@ final class AppointmentViewModel: ObservableObject {
         }
     }
 
-    /// Sends a crowd availability report for a country.
-    /// - `completion` fires on the main thread with the outcome.
-    func reportAppointment(countryKey: String,
-                           completion: @escaping (Result<Void, Error>) -> Void) {
-        AppointmentService.shared.sendReport(country: countryKey) { [weak self] result in
+    /// Sends a crowd availability report, then immediately refreshes live data.
+    func reportAppointment(country: String) {
+        AppointmentService.shared.sendReport(country: country) { [weak self] result in
             DispatchQueue.main.async {
-                completion(result)
                 if case .success = result {
-                    // Silent background refresh so confidence score updates in UI
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        self?.loadAppointments()
-                    }
+                    self?.load()
                 }
             }
         }
@@ -123,11 +117,14 @@ final class AppointmentViewModel: ObservableObject {
 
     /// Fetches structured appointment data from the deployed backend.
     func load() {
+        isLoading = true
         AppointmentService.shared.fetchAppointments { [weak self] result in
             DispatchQueue.main.async {
+                guard let self else { return }
+                self.isLoading = false
                 switch result {
-                case .success(let dtos): self?.liveAppointments = dtos
-                case .failure:           self?.liveAppointments = []
+                case .success(let dtos): self.liveAppointments = dtos
+                case .failure:           break   // keep last known data on error
                 }
             }
         }
